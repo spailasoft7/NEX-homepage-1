@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Homepage</title>
+  <script type="module">
+    // Import Firebase SDKs
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, 
+             createUserWithEmailAndPassword, 
+             signInWithEmailAndPassword, 
+             signInWithPopup, 
+             GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    // 🔹 Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyB2W3EXVtH7Q8_5_4iIV0ch3ZCOFqHbR0A",
+      authDomain: "nexus-dfac0.firebaseapp.com",
+      databaseURL: "https://nexus-dfac0-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "nexus-dfac0",
+      storageBucket: "nexus-dfac0.firebasestorage.app",
+      messagingSenderId: "376389365493",
+      appId: "1:376389365493:web:f4ad1a68abbb635b095fbc",
+      measurementId: "G-2639RGE73C"
+    };
+
+    // Initialize
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    const provider = new GoogleAuthProvider();
+
+    // 🔹 User Sign Up
+    document.getElementById("signupBtn").addEventListener("click", () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      createUserWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          const user = userCredential.user;
+          set(ref(db, 'users/' + user.uid), {
+            email: user.email,
+            role: "user"
+          });
+          alert("User account created!");
+        })
+        .catch(err => alert(err.message));
+    });
+
+    // 🔹 User Log In
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      signInWithEmailAndPassword(auth, email, password)
+        .then(() => alert("Logged in successfully!"))
+        .catch(err => alert(err.message));
+    });
+
+    // 🔹 Google Login
+    document.getElementById("googleBtn").addEventListener("click", () => {
+      signInWithPopup(auth, provider)
+        .then((result) => {
+          const user = result.user;
+          // Store role as "user" if first time
+          set(ref(db, 'users/' + user.uid), {
+            email: user.email,
+            role: "user"
+          });
+          alert("Signed in with Google as User!");
+        })
+        .catch(err => alert(err.message));
+    });
+
+    // 🔹 Load Apps (only icon + name)
+    function loadApps() {
+      const appsRef = ref(db, "apps/");
+      onValue(appsRef, (snapshot) => {
+        const appsContainer = document.getElementById("appsContainer");
+        appsContainer.innerHTML = ""; // clear
+
+        snapshot.forEach(childSnapshot => {
+          const app = childSnapshot.val();
+
+          // default icon placeholder
+          const appCard = `
+            <div style="border:1px solid #ddd; border-radius:10px; padding:10px; margin:10px; display:inline-block; width:150px; text-align:center;">
+              <img src="https://via.placeholder.com/80" alt="App Icon" style="border-radius:15px;"><br>
+              <strong>${app.appName}</strong>
+            </div>
+          `;
+          appsContainer.innerHTML += appCard;
+        });
+      });
+    }
+
+    // load apps when page opens
+    window.onload = loadApps;
+  </script>
+</head>
+<body>
+  <h1>Homepage</h1>
+
+  <h3>Sign Up / Log In</h3>
+  <input type="email" id="email" placeholder="Email"><br>
+  <input type="password" id="password" placeholder="Password"><br>
+  <button id="signupBtn">Sign Up as User</button>
+  <button id="loginBtn">Log In</button>
+  <button id="googleBtn">Sign In with Google</button>
+
+  <hr>
+
+  <h3>Available Apps</h3>
+  <div id="appsContainer"></div>
+</body>
+</html>
